@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AST Configuration</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input[type="text"], input[type="number"], input[type="password"], select, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        button { background-color: #4CAF50; color: white; padding: 10px 15px; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .config-section { background-color: #f9f9f9; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .receiver { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+        .add-receiver { background-color: #008CBA; }
+        .remove-receiver { background-color: #f44336; }
+        .info-text { color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>AST Configuration</h1>
+        
+        <div class="config-section">
+            <h2>AST Defaults</h2>
+            <div class="form-group">
+                <label for="collection_interval">Collection Interval (seconds)</label>
+                <input type="number" id="collection_interval" v-model.number="astDefaults.collection_interval">
+            </div>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" v-model="astDefaults.username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <p class="info-text">The password is stored in the .env.device-secrets file for security reasons.</p>
+            </div>
+            <div class="form-group">
+                <label>Data Types</label>
+                <div v-for="(dataType, key) in astDefaults.data_types" :key="key">
+                    <label>
+                        <input type="checkbox" v-model="dataType.enabled">
+                        {{ key }}
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>TLS</label>
+                <div>
+                    <input type="checkbox" id="tls_insecure_skip_verify" v-model="astDefaults.tls.insecure_skip_verify">
+                    <label for="tls_insecure_skip_verify">Insecure Skip Verify</label>
+                </div>
+                <div>
+                    <label for="tls_ca_file">CA File Location</label>
+                    <input type="text" id="tls_ca_file" v-model="astDefaults.tls.ca_file">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="f5_data_export">F5 Data Export</label>
+                <input type="checkbox" id="f5_data_export" v-model="astDefaults.f5_data_export">
+            </div>
+            <div class="form-group">
+                <label for="ssl_cert_validity">SSL Certificate Validity (days)</label>
+                <input type="number" id="ssl_cert_validity" v-model.number="astDefaults.ssl_cert_validity">
+            </div>
+            <button @click="saveConfig('ast_defaults')">Save AST Defaults</button>
+        </div>
+
+        <div class="config-section">
+            <h2>F5 DataFabric Export Parameters</h2>
+            <p class="info-text">Optional Parameters Required for metrics export to F5 DataFabric</p>
+            <div class="form-group">
+                <label for="sensor_secret_token">SENSOR_SECRET_TOKEN</label>
+                <input type="text" id="sensor_secret_token" v-model="configs.env.SENSOR_SECRET_TOKEN">
+            </div>
+            <div class="form-group">
+                <label for="sensor_id">SENSOR_ID</label>
+                <input type="text" id="sensor_id" v-model="configs.env.SENSOR_ID">
+            </div>
+            <button @click="saveConfig('env')">Save DataFabric Parameters</button>
+        </div>
+
+        <div class="config-section">
+            <h2>Grafana Environment Variables</h2>
+            <p class="info-text">These should be updated to more secure values outside of testing environments.</p>
+            <div class="form-group">
+                <label for="gf_security_admin_user">GF_SECURITY_ADMIN_USER</label>
+                <input type="text" id="gf_security_admin_user" v-model="configs.env.GF_SECURITY_ADMIN_USER">
+            </div>
+            <div class="form-group">
+                <label for="gf_security_admin_password">GF_SECURITY_ADMIN_PASSWORD</label>
+                <input type="password" id="gf_security_admin_password" v-model="configs.env.GF_SECURITY_ADMIN_PASSWORD">
+            </div>
+            <button @click="saveConfig('env')">Save Grafana Environment Variables</button>
+        </div>
+
+        <div class="config-section">
+            <h2>BIG-IP Receivers</h2>
+            <div v-for="(receiver, index) in bigipReceivers" :key="index" class="receiver">
+                <h3>Receiver {{ index + 1 }}</h3>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" v-model="receiver.name">
+                </div>
+                <div class="form-group">
+                    <label>Host</label>
+                    <input type="text" v-model="receiver.host">
+                </div>
+                <div class="form-group">
+                    <label>Port</label>
+                    <input type="number" v-model.number="receiver.port">
+                </div>
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" v-model="receiver.username">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" v-model="receiver.password">
+                </div>
+                <div class="form-group">
+                    <label>Data Groups</label>
+                    <div v-for="(value, key) in receiver.data_groups" :key="key">
+                        <input type="checkbox" :id="'dg-'+index+'-'+key" v-model="receiver.data_groups[key]">
+                        <label :for="'dg-'+index+'-'+key">{{ key }}</label>
+                    </div>
+                </div>
+                <button class="remove-receiver" @click="removeReceiver(index)">Remove Receiver</button>
+            </div>
+            <button class="add-receiver" @click="addReceiver">Add Receiver</button>
+            <button @click="saveConfig('bigip_receivers')">Save BIG-IP Receivers</button>
+        </div>
+
+        <div class="config-section">
+            <h2>Environment Variables</h2>
+            <div v-for="(value, key) in configs.env" :key="key" class="form-group" 
+                 v-if="!['SENSOR_SECRET_TOKEN', 'SENSOR_ID', 'GF_SECURITY_ADMIN_USER', 'GF_SECURITY_ADMIN_PASSWORD', 
+                        'GPG_KEY', 'HOME', 'HOSTNAME', 'LANG', 'PATH', 'PYTHON_VERSION'].includes(key)">
+                <label :for="key">{{ key }}</label>
+                <input :id="key" v-model="configs.env[key]" type="text">
+            </div>
+            <button @click="saveConfig('env')">Save Environment Variables</button>
+        </div>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                configs: {
+                    env: {
+                        SENSOR_SECRET_TOKEN: '',
+                        SENSOR_ID: '',
+                        GF_SECURITY_ADMIN_USER: 'admin',
+                        GF_SECURITY_ADMIN_PASSWORD: 'admin'
+                    }
+                },
+                astDefaults: {
+                    collection_interval: 60,
+                    username: '',
+                    data_types: {
+                        'f5.dns': { enabled: false },
+                        'f5.gtm': { enabled: false },
+                        // Add other data types here as needed
+                    },
+                    tls: {
+                        insecure_skip_verify: false,
+                        ca_file: ''
+                    },
+                    f5_data_export: false,
+                    ssl_cert_validity: 30
+                },
+                bigipReceivers: []
+            },
+            mounted() {
+                this.loadAllConfigs();
+            },
+            methods: {
+                loadAllConfigs() {
+                    this.loadConfig('ast_defaults');
+                    this.loadConfig('bigip_receivers');
+                    this.loadConfig('env');
+                },
+                loadConfig(type) {
+                    axios.get(`/api/config/${type}`)
+                        .then(response => {
+                            if (type === 'ast_defaults') {
+                                this.astDefaults = {...this.astDefaults, ...response.data};
+                                // Ensure data_types structure is correct
+                                if (!this.astDefaults.data_types['f5.dns']) {
+                                    this.$set(this.astDefaults.data_types, 'f5.dns', { enabled: false });
+                                }
+                                if (!this.astDefaults.data_types['f5.gtm']) {
+                                    this.$set(this.astDefaults.data_types, 'f5.gtm', { enabled: false });
+                                }
+                            } else if (type === 'bigip_receivers') {
+                                this.bigipReceivers = response.data;
+                            } else if (type === 'env') {
+                                this.configs.env = {...this.configs.env, ...response.data};
+                            }
+                        });
+                },
+                saveConfig(type) {
+                    let data;
+                    if (type === 'ast_defaults') {
+                        data = this.astDefaults;
+                    } else if (type === 'bigip_receivers') {
+                        data = this.bigipReceivers;
+                    } else if (type === 'env') {
+                        data = this.configs.env;
+                    }
+                    axios.post(`/api/config/${type}`, data)
+                        .then(() => alert('Configuration saved successfully!'))
+                        .catch(() => alert('Error saving configuration'));
+                },
+                addReceiver() {
+                    this.bigipReceivers.push({
+                        name: '',
+                        host: '',
+                        port: 443,
+                        username: '',
+                        password: '',
+                        data_groups: {
+                            virtual_servers: true,
+                            pools: true,
+                            pool_members: true,
+                            ssl_certs: true,
+                            http_monitors: true,
+                            tcp_monitors: true,
+                            apm_monitors: true,
+                            sdn_services: true,
+                            iapp_logs: true,
+                            performance_stats: true
+                        }
+                    });
+                },
+                removeReceiver(index) {
+                    this.bigipReceivers.splice(index, 1);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
