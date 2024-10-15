@@ -1,0 +1,10 @@
+services:
+  ast-config:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./config:/app/config
+      - ./.env:/app/.env
+    environment:
+      - FLASK_ENV=production
