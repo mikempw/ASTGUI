@@ -1,0 +1,113 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AST Configuration</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <link rel="stylesheet" href="{% static 'config/css/styles.css' %}">
+</head>
+<body>
+    <div id="app">
+        <h1>AST Configuration</h1>
+
+        <div class="config-section">
+            <h2>AST Defaults</h2>
+            <input v-model="astDefaults.debug" type="checkbox" id="debug">
+            <label for="debug">Debug Mode</label>
+            <input v-model="astDefaults.log_level" placeholder="Log Level">
+            <input v-model="astDefaults.log_file" placeholder="Log File Path">
+            <input v-model="astDefaults.output_directory" placeholder="Output Directory">
+            <input v-model="astDefaults.workers" type="number" placeholder="Number of Workers">
+            <input v-model="astDefaults.discovery_interval_seconds" type="number" placeholder="Discovery Interval (seconds)">
+            
+            <h3>Data Types</h3>
+            <div>
+                <input v-model="astDefaults.data_types.f5_dns.enabled" type="checkbox" id="f5_dns">
+                <label for="f5_dns">F5 DNS Enabled</label>
+            </div>
+            <div>
+                <input v-model="astDefaults.data_types.f5_gtm.enabled" type="checkbox" id="f5_gtm">
+                <label for="f5_gtm">F5 GTM Enabled</label>
+            </div>
+
+            <h3>TLS Settings</h3>
+            <div>
+                <input v-model="astDefaults.tls.insecure_skip_verify" type="checkbox" id="insecure_skip_verify">
+                <label for="insecure_skip_verify">Insecure Skip Verify</label>
+            </div>
+            <input v-model="astDefaults.tls.ca_file" placeholder="CA File Path">
+
+            <div>
+                <input v-model="astDefaults.f5_data_export" type="checkbox" id="f5_data_export">
+                <label for="f5_data_export">Enable F5 Data Export</label>
+            </div>
+
+            <button @click="saveAstDefaults">Save AST Defaults</button>
+        </div>
+
+        <div class="config-section">
+            <h2>BIG-IP Receivers</h2>
+            <div id="receiversContainer">
+                <div v-for="(receiver, index) in bigipReceivers" :key="index" class="receiver-form">
+                    <input v-model="receiver.name" placeholder="Name (e.g., bigip/1)">
+                    <input v-model="receiver.endpoint" placeholder="Endpoint (e.g., https://10.0.0.1)">
+                    <input v-model="receiver.username" placeholder="Username (optional)">
+                    <input v-model="receiver.password" type="password" placeholder="Password (optional)">
+                    <input v-model="receiver.collection_interval" placeholder="Collection Interval (e.g., 30s)">
+                    
+                    <h4>Data Types</h4>
+                    <div>
+                        <input v-model="receiver.data_types.f5_dns.enabled" type="checkbox" :id="'f5_dns_' + index">
+                        <label :for="'f5_dns_' + index">F5 DNS Enabled</label>
+                    </div>
+                    <div>
+                        <input v-model="receiver.data_types.f5_gtm.enabled" type="checkbox" :id="'f5_gtm_' + index">
+                        <label :for="'f5_gtm_' + index">F5 GTM Enabled</label>
+                    </div>
+
+                    <h4>TLS Settings</h4>
+                    <div>
+                        <input v-model="receiver.tls.insecure_skip_verify" type="checkbox" :id="'insecure_skip_verify_' + index">
+                        <label :for="'insecure_skip_verify_' + index">Insecure Skip Verify</label>
+                    </div>
+                    <input v-model="receiver.tls.ca_file" placeholder="CA File Path">
+
+                    <button @click="removeReceiver(index)">Remove</button>
+                </div>
+            </div>
+            <button @click="addReceiver">Add Receiver</button>
+            <button @click="saveBigipReceivers">Save BIG-IP Receivers</button>
+        </div>
+
+        <div class="config-section">
+            <h2>Environment Variables</h2>
+            <div id="envContainer">
+                <div v-for="(envVar, index) in envVariables" :key="index">
+                    <input v-model="envVar.key" placeholder="Key">
+                    <input v-model="envVar.value" placeholder="Value">
+                    <button @click="removeEnvVariable(index)">Remove</button>
+                </div>
+            </div>
+            <button @click="addEnvVariable">Add Environment Variable</button>
+            <button @click="saveEnvVariables">Save Environment Variables</button>
+        </div>
+
+        <div class="config-section">
+            <h2>Environment Secrets</h2>
+            <div id="envSecretsContainer">
+                <div v-for="(secret, index) in envSecrets" :key="index">
+                    <input v-model="secret.key" placeholder="Key">
+                    <input v-model="secret.value" type="password" placeholder="Secret Value">
+                    <button @click="removeEnvSecret(index)">Remove</button>
+                </div>
+            </div>
+            <button @click="addEnvSecret">Add Environment Secret</button>
+            <button @click="saveEnvSecrets">Save Environment Secrets</button>
+        </div>
+    </div>
+
+    <script src="{% static 'config/js/app.js' %}"></script>
+</body>
+</html>
