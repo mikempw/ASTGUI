@@ -1,6 +1,7 @@
 new Vue({
     el: '#app',
     data: {
+        configPath: '',
         astDefaults: {
             debug: false,
             log_level: 'INFO',
@@ -34,7 +35,10 @@ new Vue({
                     'Content-Type': 'application/json',
                     'X-CSRFToken': this.getCookie('csrftoken')
                 },
-                body: JSON.stringify(this.astDefaults)
+                body: JSON.stringify({
+                    configPath: this.configPath,
+                    data: this.astDefaults
+                })
             }).then(response => response.json())
               .then(data => console.log(data))
               .catch(error => console.error('Error:', error));
@@ -70,7 +74,10 @@ new Vue({
                     'Content-Type': 'application/json',
                     'X-CSRFToken': this.getCookie('csrftoken')
                 },
-                body: JSON.stringify(this.bigipReceivers)
+                body: JSON.stringify({
+                    configPath: this.configPath,
+                    data: this.bigipReceivers
+                })
             }).then(response => response.json())
               .then(data => console.log(data))
               .catch(error => console.error('Error:', error));
@@ -88,7 +95,10 @@ new Vue({
                     'Content-Type': 'application/json',
                     'X-CSRFToken': this.getCookie('csrftoken')
                 },
-                body: JSON.stringify(this.envVariables)
+                body: JSON.stringify({
+                    configPath: this.configPath,
+                    data: this.envVariables
+                })
             }).then(response => response.json())
               .then(data => console.log(data))
               .catch(error => console.error('Error:', error));
@@ -106,7 +116,10 @@ new Vue({
                     'Content-Type': 'application/json',
                     'X-CSRFToken': this.getCookie('csrftoken')
                 },
-                body: JSON.stringify(this.envSecrets)
+                body: JSON.stringify({
+                    configPath: this.configPath,
+                    data: this.envSecrets
+                })
             }).then(response => response.json())
               .then(data => console.log(data))
               .catch(error => console.error('Error:', error));
